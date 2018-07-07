@@ -28,7 +28,7 @@ NUM_CORES = 4
 #x_train = x_train.astype('float32')/255
 #x_test= x_test.astype('float32')/255
 print(len(x_train))
-hf = h5py.File('/Volumes/Seagate Slim Drive/Vineet/cifar10_scaled_2.h5', 'w')
+hf = h5py.File('/home/pvineet/Frodo/cifar10_scaled_2.h5', 'w')
 
 def scale_image(in_image, factor=7):
     return scipy.ndimage.zoom(in_image, (2,2,1), order=3)
