@@ -60,6 +60,7 @@ if __name__ == '__main__':
         #plt.show()
 
     #Test images
+    #Use Multiprocessing to scale on each core
     with Pool(NUM_CORES) as p:
         start_time =  time.time()
         out_x_test = p.map(scale_image,x_test)
