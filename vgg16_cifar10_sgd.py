@@ -1,4 +1,5 @@
-
+#This is an initial attempt at training VGG16 availble in Keras with  CIFAR10
+#The Native SGD available in keras has been used
 # coding: utf-8
 
 from keras.models import Sequential
@@ -14,6 +15,7 @@ import h5py
 import matplotlib.pyplot as plt
 
 #Load data
+# This is CIFAR10 scaled twice=>64x64
 hf = h5py.File('cifar10_scaled_2.h5', 'r')
 train_images = hf['train_data'][:]
 test_images = hf['test_data'][:]
