@@ -15,7 +15,6 @@ from keras.callbacks import LearningRateScheduler
 from keras.callbacks import ReduceLROnPlateau, CSVLogger, EarlyStopping
 from keras.optimizers import Adam
 
-#rewrite with batch normalization
 def res_layer(input_layer, n=16, strides=1):
     L1 = Conv2D(n, (3, 3), padding='same', strides=strides)(input_layer)
     L1 = BatchNormalization()(L1)
@@ -29,6 +28,7 @@ def res_layer(input_layer, n=16, strides=1):
     L4 = Activation('relu')(L4)
     return L4
 
+#Learning rate scheduler
 def lr_schedule(epoch):
     lr = 0.001
     if epoch > 180:
@@ -42,14 +42,19 @@ def lr_schedule(epoch):
     return lr
 
 batch_size = 32
+#number of epochs
 nb_epoch = 200
+#learning rate reducer
 lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1), cooldown=0, patience=5, min_lr=0.5e-6)
+# early stopping of training, defined but not used
 early_stopper = EarlyStopping(min_delta=0.001, patience=10)
+#log the progress into a csv file
 csv_logger = CSVLogger('resnet18_cifar10.csv')
 
 main_input = Input(shape=(32,32,3))
 L2 = res_layer(main_input, 16)
 L2 = res_layer(L2, 16)
+#stride of 2 helps to reduce the dimensions
 L2 = res_layer(L2, 32, strides=2)
 L2 = res_layer(L2, 32)
 L2 = res_layer(L2, 64, strides=2)
