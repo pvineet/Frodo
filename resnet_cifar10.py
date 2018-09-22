@@ -1,106 +1,98 @@
-
-# coding: utf-8
-
 from keras.datasets import cifar10
 from keras.utils import to_categorical
 from keras import layers
 from keras import models
 from keras.applications.resnet50 import ResNet50
-from keras.layers import Input, Conv2D, MaxPooling2D, Input, Activation
+from keras.layers import Input, Conv2D, MaxPooling2D, Input, GlobalAveragePooling2D
 from keras.layers import Add, Flatten, AveragePooling2D, Dense, BatchNormalization
+from keras.layers import Activation
 from keras.models import Model
 from keras import optimizers 
+import time
+from keras.preprocessing.image import ImageDataGenerator
+import numpy as np
+from keras.callbacks import LearningRateScheduler
+from keras.callbacks import ReduceLROnPlateau, CSVLogger, EarlyStopping
+from keras.optimizers import Adam
 
-# n = 3
-# Block 1
+#rewrite with batch normalization
+def res_layer(input_layer, n=16, strides=1):
+    L1 = Conv2D(n, (3, 3), padding='same', strides=strides)(input_layer)
+    L1 = BatchNormalization()(L1)
+    L1 = Activation('relu')(L1)
+    L2 = Conv2D(n, (3, 3), padding='same')(L1)
+    L2 = BatchNormalization()(L2)
+    L2 = Activation('relu')(L2)
+    L3 = Conv2D(n, (3, 3), padding='same')(L2)
+    L3 = BatchNormalization()(L3)
+    L4 = Add()([L3, L1])
+    L4 = Activation('relu')(L4)
+    return L4
+
+def lr_schedule(epoch):
+    lr = 0.001
+    if epoch > 180:
+        lr *= 0.5e-3
+    elif epoch > 160:
+        lr *= 1e-3  
+    elif epoch > 120:
+        lr *= 1e-2   
+    elif epoch > 80:
+        lr *= 1e-1   
+    return lr
+
+batch_size = 32
+nb_epoch = 200
+lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1), cooldown=0, patience=5, min_lr=0.5e-6)
+early_stopper = EarlyStopping(min_delta=0.001, patience=10)
+csv_logger = CSVLogger('resnet18_cifar10.csv')
+
 main_input = Input(shape=(32,32,3))
-L1 = Conv2D(16, (3, 3), padding='same')(main_input)
-L1 = BatchNormalization()(L1)
-L1 = Activation('relu')(L1)
-L2 = Conv2D(16, (3, 3), padding='same')(L1)
-L2 = BatchNormalization()(L2)
-L2 = Activation('relu')(L2)
-L2 = Conv2D(16, (3, 3), padding='same')(L2)
-L2 = BatchNormalization()(L2)
-L2 = Activation('relu')(L2)
-L2 = Conv2D(16, (3, 3), padding='same')(L2)
-L2 = BatchNormalization()(L2)
-L2 = Activation('relu')(L2)
-L2 = Conv2D(16, (3, 3), padding='same')(L2)
-L2 = BatchNormalization()(L2)
-L2 = Activation('relu')(L2)
-L2 = Conv2D(16, (3, 3), padding='same')(L2)
-L2 = BatchNormalization()(L2)
-L2 = Activation('relu')(L2)
-L3 = Add()([L2, L1])
-
-#Block 2
-L3 = Conv2D(32, (3, 3), strides=(2,2), padding='same')(L3)
-L3 = BatchNormalization()(L3)
-L3 = Activation('relu')(L3)
-L4 = Conv2D(32, (3, 3), padding='same')(L3)
-L4 = BatchNormalization()(L4)
-L4 = Activation('relu')(L4)
-L4 = Conv2D(32, (3, 3), padding='same')(L4)
-L4 = BatchNormalization()(L4)
-L4 = Activation('relu')(L4)
-L4 = Conv2D(32, (3, 3), padding='same')(L4)
-L4 = BatchNormalization()(L4)
-L4 = Activation('relu')(L4)
-L4 = Conv2D(32, (3, 3), padding='same')(L4)
-L4 = BatchNormalization()(L4)
-L4 = Activation('relu')(L4)
-L4 = Conv2D(32, (3, 3), padding='same')(L4)
-L4 = BatchNormalization()(L4)
-L4 = Activation('relu')(L4)
-L5 = Add()([L4, L3])
-
-# Block 3
-L5 = Conv2D(64, (3, 3), strides=(2,2), padding='same')(L5)
-L5 = BatchNormalization()(L5)
-L5 = Activation('relu')(L5)
-L6 = Conv2D(64, (3, 3), padding='same')(L5)
-L6 = BatchNormalization()(L6)
-L6 = Activation('relu')(L6)
-L6 = Conv2D(64, (3, 3), padding='same')(L6)
-L6 = BatchNormalization()(L6)
-L6 = Activation('relu')(L6)
-L6 = Conv2D(64, (3, 3), padding='same')(L6)
-L6 = BatchNormalization()(L6)
-L6 = Activation('relu')(L6)
-L6 = Conv2D(64, (3, 3), padding='same')(L6)
-L6 = BatchNormalization()(L6)
-L6 = Activation('relu')(L6)
-L6 = Conv2D(64, (3, 3), padding='same')(L6)
-L6 = BatchNormalization()(L6)
-L6 = Activation('relu')(L6)
-L7 = Add()([L6, L5])
-
-L8 = AveragePooling2D(pool_size=(2,2))(L7)
-L8 = Flatten()(L8)
-L8 = Dense(10,activation='softmax')(L8)
-model = Model(main_input, L8)
+L2 = res_layer(main_input, 16)
+L2 = res_layer(L2, 16)
+L2 = res_layer(L2, 32, strides=2)
+L2 = res_layer(L2, 32)
+L2 = res_layer(L2, 64, strides=2)
+L2 = res_layer(L2, 64)
+L3 = AveragePooling2D()(L2)
+L3 = Flatten()(L3)
+L4 = Dense(10,activation='softmax')(L3)
+model = Model(main_input, L4)
 model.summary()
 
-
 (x_train, y_train), (x_test, y_test) = cifar10.load_data() 
-# Normalize the pixel values
 x_train = x_train.astype('float32')/255 
 x_test = x_test.astype('float32')/255 
 y_train = to_categorical(y_train) 
 y_test = to_categorical(y_test) 
-
-# define the optimizer to be used
-sgd = optimizers.SGD(lr=0.01, decay=1e-4, momentum=0.9, nesterov=True) 
-model.compile(optimizer=sgd, 
+sgd = optimizers.SGD(lr=0.01, decay=5e-4, momentum=0.9, nesterov=True) 
+model.compile(optimizer=Adam(lr=lr_schedule(0)), 
               loss='categorical_crossentropy', 
               metrics=['accuracy']) 
-history = model.fit(x_train, y_train, epochs=5, shuffle='batch', batch_size=64) 
+datagen = ImageDataGenerator(
+        featurewise_center=False,  # set input mean to 0 over the dataset
+        samplewise_center=False,  # set each sample mean to 0
+        featurewise_std_normalization=False,  # divide inputs by std of the dataset
+        samplewise_std_normalization=False,  # divide each input by its std
+        zca_whitening=False,  # apply ZCA whitening
+        rotation_range=15,  # randomly rotate images in the range (degrees, 0 to 180)
+        width_shift_range=0.1,  # randomly shift images horizontally (fraction of total width)
+        height_shift_range=0.1,  # randomly shift images vertically (fraction of total height)
+        horizontal_flip=True,  # randomly flip images
+        vertical_flip=False) # randomly flip images
+datagen.fit(x_train)
 
+start_time = time.time()
+model.fit_generator(datagen.flow(x_train, y_train, batch_size=batch_size),
+                    steps_per_epoch=x_train.shape[0] // batch_size,
+                    validation_data=(x_test, y_test),
+                    epochs=nb_epoch, 
+                    verbose=1,
+                    max_queue_size=100,
+                    callbacks=[LearningRateScheduler(lr_schedule), csv_logger])
+                    #callbacks=[LearningRateScheduler(lr_schedule), early_stopper, csv_logger])
+end_time = time.time()
 test_loss, test_acc = model.evaluate(x_test, y_test) 
 print(test_loss, test_acc)
-f = open("log_resnet_cifar10_32x32.txt", 'w')
-f.write("Test loss {}".format(test_loss))
-f.write("\n")
-f.write("Test accuracy {}".format(test_acc))
-f.close()
+print(end_time-start_time)
+
