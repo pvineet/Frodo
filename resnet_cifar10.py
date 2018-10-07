@@ -1,19 +1,21 @@
+import time
+import numpy as np
 from keras.datasets import cifar10
 from keras.utils import to_categorical
-from keras import layers
-from keras import models
-from keras.applications.resnet50 import ResNet50
-from keras.layers import Input, Conv2D, MaxPooling2D, Input, GlobalAveragePooling2D
-from keras.layers import Add, Flatten, AveragePooling2D, Dense, BatchNormalization
-from keras.layers import Activation
+from keras.layers import (Input,
+			Conv2D,
+			MaxPooling2D,
+			GlobalAveragePooling2D,
+			Add,
+			Flatten,
+			AveragePooling2D,
+			Dense,
+			BatchNormalization,
+			 Activation)
 from keras.models import Model
-from keras import optimizers 
-import time
 from keras.preprocessing.image import ImageDataGenerator
-import numpy as np
-from keras.callbacks import LearningRateScheduler
-from keras.callbacks import ReduceLROnPlateau, CSVLogger, EarlyStopping
-from keras.optimizers import Adam
+from keras.callbacks import LearningRateScheduler, ReduceLROnPlateau, CSVLogger, EarlyStopping
+from keras.optimizers import Adam, SGD
 
 #rewrite with batch normalization
 def res_layer(input_layer, n=16, strides=1):
@@ -31,21 +33,21 @@ def res_layer(input_layer, n=16, strides=1):
 
 def lr_schedule(epoch):
     lr = 0.001
-    if epoch > 180:
+    if epoch > 240:
         lr *= 0.5e-3
-    elif epoch > 160:
+    elif epoch > 2200:
         lr *= 1e-3  
-    elif epoch > 120:
+    elif epoch > 180:
         lr *= 1e-2   
-    elif epoch > 80:
+    elif epoch > 140:
         lr *= 1e-1   
+    print('Learning rate: ', lr)
     return lr
 
-batch_size = 32
-nb_epoch = 200
-lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1), cooldown=0, patience=5, min_lr=0.5e-6)
+batch_size = 64
+nb_epoch = 300
 early_stopper = EarlyStopping(min_delta=0.001, patience=10)
-csv_logger = CSVLogger('resnet18_cifar10.csv')
+csv_logger = CSVLogger('resnet_cifar10.csv')
 
 main_input = Input(shape=(32,32,3))
 L2 = res_layer(main_input, 16)
@@ -65,7 +67,6 @@ x_train = x_train.astype('float32')/255
 x_test = x_test.astype('float32')/255 
 y_train = to_categorical(y_train) 
 y_test = to_categorical(y_test) 
-sgd = optimizers.SGD(lr=0.01, decay=5e-4, momentum=0.9, nesterov=True) 
 model.compile(optimizer=Adam(lr=lr_schedule(0)), 
               loss='categorical_crossentropy', 
               metrics=['accuracy']) 
