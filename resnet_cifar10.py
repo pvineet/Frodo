@@ -44,22 +44,10 @@ def lr_schedule(epoch):
     print('Learning rate: ', lr)
     return lr
 
-<<<<<<< HEAD
 batch_size = 64
 nb_epoch = 300
 early_stopper = EarlyStopping(min_delta=0.001, patience=10)
 csv_logger = CSVLogger('resnet_cifar10.csv')
-=======
-batch_size = 32
-#number of epochs
-nb_epoch = 200
-#learning rate reducer
-lr_reducer = ReduceLROnPlateau(factor=np.sqrt(0.1), cooldown=0, patience=5, min_lr=0.5e-6)
-# early stopping of training, defined but not used
-early_stopper = EarlyStopping(min_delta=0.001, patience=10)
-#log the progress into a csv file
-csv_logger = CSVLogger('resnet18_cifar10.csv')
->>>>>>> c5cdfb50e5f3e79951e552766cc24abb45bb580e
 
 main_input = Input(shape=(32,32,3))
 L2 = res_layer(main_input, 16)
