@@ -44,7 +44,7 @@ def res_layer(input_layer, n=16, strides=1):
     L4 = Activation('relu')(L4)
     return L4
 
-#Learning rate scheduler
+# Learning rate scheduler
 def lr_schedule(epoch):
     lr = 0.001
     if epoch > 240:
