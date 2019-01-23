@@ -1,23 +1,37 @@
+
+# coding: utf-8
+
+## ResNet implementation trained using CIFAR10 dataset
+
+
 import time
 import numpy as np
 from keras.datasets import cifar10
 from keras.utils import to_categorical
-from keras.layers import (Input,
-			Conv2D,
-			MaxPooling2D,
-			GlobalAveragePooling2D,
-			Add,
-			Flatten,
-			AveragePooling2D,
-			Dense,
-			BatchNormalization,
-			 Activation)
+from keras.layers import (
+    Input,
+	Conv2D,
+	MaxPooling2D,
+    GlobalAveragePooling2D,
+	Add,
+    Flatten,
+    AveragePooling2D,
+    Dense,
+    BatchNormalization,
+    Activation,
+)
 from keras.models import Model
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import LearningRateScheduler, ReduceLROnPlateau, CSVLogger, EarlyStopping
 from keras.optimizers import Adam, SGD
 
 def res_layer(input_layer, n=16, strides=1):
+    """
+        params  input_layer: input data to the input layer
+                n: number of filters
+                strides: strides
+        return :  returns handle to the to the output
+    """
     L1 = Conv2D(n, (3, 3), padding='same', strides=strides)(input_layer)
     L1 = BatchNormalization()(L1)
     L1 = Activation('relu')(L1)
@@ -36,11 +50,11 @@ def lr_schedule(epoch):
     if epoch > 240:
         lr *= 0.5e-3
     elif epoch > 2200:
-        lr *= 1e-3  
+        lr *= 1e-3
     elif epoch > 180:
-        lr *= 1e-2   
+        lr *= 1e-2
     elif epoch > 140:
-        lr *= 1e-1   
+        lr *= 1e-1
     print('Learning rate: ', lr)
     return lr
 
@@ -52,8 +66,7 @@ csv_logger = CSVLogger('resnet_cifar10.csv')
 main_input = Input(shape=(32,32,3))
 L2 = res_layer(main_input, 16)
 L2 = res_layer(L2, 16)
-#stride of 2 helps to reduce the dimensions
-L2 = res_layer(L2, 32, strides=2)
+L2 = res_layer(L2, 32, strides=2) # stride of 2 helps to reduce the dimensions
 L2 = res_layer(L2, 32)
 L2 = res_layer(L2, 64, strides=2)
 L2 = res_layer(L2, 64)
@@ -63,14 +76,14 @@ L4 = Dense(10,activation='softmax')(L3)
 model = Model(main_input, L4)
 model.summary()
 
-(x_train, y_train), (x_test, y_test) = cifar10.load_data() 
-x_train = x_train.astype('float32')/255 
-x_test = x_test.astype('float32')/255 
-y_train = to_categorical(y_train) 
-y_test = to_categorical(y_test) 
-model.compile(optimizer=Adam(lr=lr_schedule(0)), 
-              loss='categorical_crossentropy', 
-              metrics=['accuracy']) 
+(x_train, y_train), (x_test, y_test) = cifar10.load_data()
+x_train = x_train.astype('float32')/255
+x_test = x_test.astype('float32')/255
+y_train = to_categorical(y_train)
+y_test = to_categorical(y_test)
+model.compile(optimizer=Adam(lr=lr_schedule(0)),
+              loss='categorical_crossentropy',
+              metrics=['accuracy'])
 datagen = ImageDataGenerator(
         featurewise_center=False,  # set input mean to 0 over the dataset
         samplewise_center=False,  # set each sample mean to 0
@@ -88,13 +101,13 @@ start_time = time.time()
 model.fit_generator(datagen.flow(x_train, y_train, batch_size=batch_size),
                     steps_per_epoch=x_train.shape[0] // batch_size,
                     validation_data=(x_test, y_test),
-                    epochs=nb_epoch, 
+                    epochs=nb_epoch,
                     verbose=1,
                     max_queue_size=100,
                     callbacks=[LearningRateScheduler(lr_schedule), csv_logger])
                     #callbacks=[LearningRateScheduler(lr_schedule), early_stopper, csv_logger])
 end_time = time.time()
-test_loss, test_acc = model.evaluate(x_test, y_test) 
+test_loss, test_acc = model.evaluate(x_test, y_test)
 print(test_loss, test_acc)
 print(end_time-start_time)
 

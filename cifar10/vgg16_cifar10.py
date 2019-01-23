@@ -2,21 +2,21 @@
 import time
 import numpy as np
 from keras.layers import (
-		Dense, 
-		Dropout, 
-		Activation, 
+		Dense,
+		Dropout,
+		Activation,
 		Flatten,
 		Input,
-		Conv2D, 
+		Conv2D,
 		MaxPooling2D,
 		BatchNormalization)
 from keras.utils import to_categorical
 from keras.datasets import cifar10
 from keras.preprocessing.image import ImageDataGenerator
 from keras.callbacks import (
-		ReduceLROnPlateau, 
-		CSVLogger, 
-		EarlyStopping, 
+		ReduceLROnPlateau,
+		CSVLogger,
+		EarlyStopping,
 		LearningRateScheduler,
 		Callback)
 from keras.optimizers import Adam, SGD
@@ -35,42 +35,42 @@ class TimeHistory(Callback):
 
 class vgg16:
     def __init__(self, fc_layer_size = 512, conv_dropout = False):
-	input_layer = Input(shape=(32,32,3))
-	#Block 1
-	x = self.conv_layer(input_layer)
-	#Block 2
-	x = self.conv_layer(x, n=128)
-	#Block 3
-	x = self.conv_layer(x, n=256, conv_1_1=True)
-	#Block 4
-	x = self.conv_layer(x, n=512, conv_1_1=True)
-	#Block 5
-	x = self.conv_layer(x, n=512, conv_1_1=True)
-	#Flatten
-	x = Flatten()(x)
-	for i in range(3):
-	    x = Dense(512,activation='relu')(x)
-	    if i < 2:
-		x = Dropout(0.5)(x)
-	x = Dense(10, activation='softmax')(x)
-	self.model = Model(input_layer, x)
-	summary = self.model.summary()
-	
+        input_layer = Input(shape=(32,32,3))
+        #Block 1
+        x = self.conv_layer(input_layer)
+        #Block 2
+        x = self.conv_layer(x, n=128)
+        #Block 3
+        x = self.conv_layer(x, n=256, conv_1_1=True)
+        #Block 4
+        x = self.conv_layer(x, n=512, conv_1_1=True)
+        #Block 5
+        x = self.conv_layer(x, n=512, conv_1_1=True)
+        #Flatten
+        x = Flatten()(x)
+        for i in range(3):
+            x = Dense(512,activation='relu')(x)
+            if i < 2:
+                x = Dropout(0.5)(x)
+        x = Dense(10, activation='softmax')(x)
+        self.model = Model(input_layer, x)
+        summary = self.model.summary()
+
     def build(self):
-	return self.model
-	
+        return self.model
+
     def conv_layer(self, x, n=64, conv_1_1=False, dropout_layer=False, batch_norm=True):
-	"""
-        n =  number of filters/channels
-	"""
-	x = Conv2D(n, (3, 3), activation='relu', padding='same')(x)
-	x = Conv2D(n, (3, 3), activation='relu', padding='same')(x)
-	x = MaxPooling2D(pool_size=(2,2), strides=(2,2))(x)
-	if batch_norm:
-	    x = BatchNormalization()(x)
- 	if dropout_layer:
-	    x = Dropout(0.5)(x)
-	return x	
+        """
+            n =  number of filters/channels
+        """
+        x = Conv2D(n, (3, 3), activation='relu', padding='same')(x)
+        x = Conv2D(n, (3, 3), activation='relu', padding='same')(x)
+        x = MaxPooling2D(pool_size=(2,2), strides=(2,2))(x)
+        if batch_norm:
+            x = BatchNormalization()(x)
+        if dropout_layer:
+            x = Dropout(0.5)(x)
+        return x
 
     def lr_schedule(self, epoch):
         """Learning Rate Schedule
@@ -92,30 +92,28 @@ class vgg16:
             lr *= 1e-1
         print('Learning rate: ', lr)
         return lr
-    
+
     def log_file(self):
-	pass
+        pass
 
     def callbacks(self):
         # define a learning rate scheduler
         callbacks = []
         callbacks.append(LearningRateScheduler(self.lr_schedule))
-        #callbacks.append(ReduceLROnPlateau(factor=np.sqrt(0.1), cooldown=0, patience=5, min_lr=0.5e-6))
-        #callbacks.append(EarlyStopping(min_delta=0.001, patience=10))
         callbacks.append(CSVLogger('vgg16_cifar10_1.csv'))
         callbacks.append(TimeHistory())
         return callbacks
 
-#Load CIFAR10 dataset
+# Load CIFAR10 dataset
 (x_train, y_train), (x_test, y_test) = cifar10.load_data()
 vgg16 = vgg16()
 model = vgg16.build()
 
-#open log file to dump progress data
+# open log file to dump progress data
 batch_size = 32
 nb_epoch = 300
 
-#scale pixel values from 0to255 => 0 to 1
+# scale pixel values from 0to255 => 0 to 1
 x_train = x_train.astype('float32')/255
 x_test = x_test.astype('float32')/255
 
@@ -123,9 +121,9 @@ x_test = x_test.astype('float32')/255
 y_train = to_categorical(y_train)
 y_test = to_categorical(y_test)
 
-#complile the model
-#model.compile(optimizer=Adam(lr=lr_schedule(0)),
-model.compile(optimizer=SGD(lr=vgg16.lr_schedule(0)),
+# complile the model
+# model.compile(optimizer=SGD(lr=vgg16.lr_schedule(0)),
+model.compile(optimizer=Adam(lr=vgg16.lr_schedule(0)),
               loss='categorical_crossentropy',
               metrics=['accuracy'])
 #  train the model
