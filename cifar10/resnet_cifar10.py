@@ -49,7 +49,7 @@ def lr_schedule(epoch):
     lr = 0.001
     if epoch > 240:
         lr *= 0.5e-3
-    elif epoch > 2200:
+    elif epoch > 220:
         lr *= 1e-3
     elif epoch > 180:
         lr *= 1e-2
